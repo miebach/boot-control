@@ -1,0 +1,174 @@
+#!/usr/bin/python 
+print "boot-control 0.9 - organize file system checks on startup."
+
+CR="\r"
+LF="\n"
+
+def assert1(condition,msg):
+  if condition:
+    return
+  raise AssertionError(msg)
+
+
+def human_date_diff(ds1,ds2=None):
+  import datetime
+  import time
+  fmt =  "%a %b %d %H:%M:%S %Y"
+  if ds2 is None:
+    diff = datetime.datetime.strptime(ds1,fmt) - datetime.datetime.fromtimestamp(time.mktime(time.localtime()))
+    return abs(diff.days)
+
+  diff = datetime.datetime.strptime(ds1,fmt) - datetime.datetime.strptime(ds2,fmt)
+  return abs(diff.days)
+
+
+
+def rtrim_crlf(s):
+  """ remove any cr or lf character from the end of the s """
+  if s == None:
+    return s
+  while 1:
+    if len(s) == 0:
+      return s
+    if s[-1:] in [CR,LF]:
+      s = s[:-1]
+    else:
+      return s
+
+def create_cut_list(nfrom,nto):
+  if (nfrom is None) and (nto is None):
+    raise("nfrom and nto cannot both be None")
+  if nfrom == nto:
+    list = "%s" % nfrom
+  elif nfrom is None:
+     list="-%s" % nto
+  elif nto is None:
+     list="%s-" % nfrom
+  else:
+     list="%s-%s" % (nfrom,nto)
+  return list
+
+def ask_user(msg):
+  
+  print msg + " "
+  while 1:
+    k = msvcrt.getche().upper()
+    print
+    if k == "N":
+      return 0
+    if k == "Y":
+      return 1
+    print "Please press y or n:", 
+
+
+def pause(msg=""):
+  print
+  print msg
+  print "Press any key to continue ...",
+  k = msvcrt.getche()
+  print
+  return 1
+
+def call(cmd,more_lines=[]):
+  """
+executes the commandline cmd as a new process p and passes more_lines (which must be a list of lines)
+as input to p. returns p's output as a list of lines.
+"""
+
+  import os
+
+
+  fi,fo = os.popen2(cmd,'t')
+  for l in more_lines:
+    fi.write(l+"\n")
+  fi.close()
+  rescr = fo.readlines()
+  # remove the trailing newline chracters from the resulting lines:
+  res = []
+  for l in rescr:
+    res.append(rtrim_crlf(l))
+  fo.close()
+  return res
+
+def get_disks():
+  # a list of disks from fstab
+  #cmd="cat /etc/fstab|grep '^/dev'|cut -f1 -d' '"
+  cmd="sudo fdisk -l 2>/dev/null|grep '^Disk /dev/'|cut -f2 -d' '"
+  disk_list = call(cmd)
+  result = []
+  for disk in disk_list:
+    if disk.endswith(":"):
+      result.append(disk[:-1])
+    else:
+      result.append(disk)
+  return result
+
+def get_tinfo(disk):
+  def extract_info(line):
+    if len(line)<23:
+      return {}
+    k1 = line[:22].strip()
+    if k1[-1:] != ":": #check for trailing colon
+      return {}
+    ku = k1[:-1] # remove the trailing colon
+    k = ku.lower()
+    v = line[22:].strip()
+    return {k:v}
+
+  def extract_info_all(lines):
+    ind=0
+    info_all = {}
+    for line in lines:
+      #print "line %s" % ind
+      kv = extract_info(line)
+      info_all.update(kv)
+      ind = ind + 1
+    return info_all
+
+  cmd = "sudo tune2fs -l %s 2>/dev/null"
+  tinfo = call(cmd % disk)
+  t2e = "command tune2fs did not return expected output"
+  assert1(tinfo[0].startswith("tune2fs"),t2e)
+  info = extract_info_all(tinfo[1:]) # the first line is the tune2fs banner
+  return info
+
+
+def remaining_mounts(info):
+  # how many mounts left until forced check?
+    mmc="maximum mount count"
+    mc="mount count"
+    if not info.has_key(mmc):
+      return None
+    if not info.has_key(mc):
+      return None
+    try:
+      r = int(info[mmc]) - int(info[mc])
+      return r
+    except:
+      print "could not parse info: '%s', '%s'" % (mmc,mc)
+      return None
+    
+def remaining_days(info):
+  # how many days left until forced check?
+    nca="next check after"
+    if not info.has_key(nca):
+      return None
+    r = human_date_diff(info[nca])
+    try:
+      return r
+    except:
+      print "could not parse info: '%s'" % nca
+      return None
+
+disks = get_disks()
+for disk in disks:
+  info = get_tinfo(disk)
+  rm = remaining_mounts(info)
+  rd = remaining_days(info)
+  if (rm is None) or (rd is None):
+    continue
+  print "%s - remaining mounts: %s - remaining days: %s" % (disk,rm,rd)
+
+print "To force a check of all filesystems with a reboot:"
+print "$ sudo touch /forcefsck && sudo shutdown -r now"
+

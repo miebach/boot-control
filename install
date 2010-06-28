@@ -1,0 +1,24 @@
+#!/bin/bash 
+
+SCRIPTNAME=boot-control
+TARGETDIR=/usr/local/bin/
+
+echo "Now installing boot-control script..."
+
+
+# Absolute path to this script, e.g. /path/install
+SCRIPT=`readlink -f $0`
+# Absolute path this script is in, thus /path
+SCRIPTPATH=`dirname $SCRIPT`/
+echo "Script dir: $SCRIPTPATH"
+
+# install the command by creating a symlink in /usr/local/bin
+
+LINK=$TARGETDIR$SCRIPTNAME
+echo "Creating symlink: $LINK"
+sudo ln -s $SCRIPTPATH$SCRIPTNAME $LINK
+sudo chown root.root $LINK
+sudo chmod 775 $LINK
+
+
+
