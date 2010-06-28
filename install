@@ -21,4 +21,6 @@ sudo chown root.root $LINK
 sudo chmod 775 $LINK
 
 
+echo To get a countdown on each login:
+echo "$ echo \"boot-control\" >> ~/.bashrc"
 
