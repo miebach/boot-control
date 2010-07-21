@@ -3,8 +3,8 @@ print "boot-control 0.9 - organize file system checks on startup."
 
 CR="\r"
 LF="\n"
-#disks = ['/dev/md0', '/dev/md1', '/dev/md2']
-disks = ['/dev/sda1']
+disks = ['/dev/md0', '/dev/md1', '/dev/md2']
+#disks = ['/dev/sda1']
 
 
 def assert1(condition,msg):

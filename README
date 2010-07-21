@@ -1,5 +1,7 @@
 This script displays forced file system check countdown info on Linux systems.
 
-Tested on Ubuntu 8.04
+Tested on Ubuntu 8.04 and Ubuntu 9.10
+
+Config: adjust the disks array in line 6/7 of the file boot-disk
 
 Licence: To the extent possible under law, I have waived all copyright and related or neighboring rights to this code 
