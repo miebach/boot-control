@@ -3,6 +3,8 @@ print "boot-control 0.9 - organize file system checks on startup."
 
 CR="\r"
 LF="\n"
+disks = ['/dev/md0', '/dev/md1', '/dev/md2']
+
 
 def assert1(condition,msg):
   if condition:
@@ -160,7 +162,7 @@ def remaining_days(info):
       print "could not parse info: '%s'" % nca
       return None
 
-disks = get_disks()
+#disks = get_disks()
 for disk in disks:
   info = get_tinfo(disk)
   rm = remaining_mounts(info)
