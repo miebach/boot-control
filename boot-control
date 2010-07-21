@@ -3,6 +3,9 @@ print "boot-control 0.9 - organize file system checks on startup."
 
 CR="\r"
 LF="\n"
+#disks = ['/dev/md0', '/dev/md1', '/dev/md2']
+disks = ['/dev/sda1']
+
 
 def assert1(condition,msg):
   if condition:
@@ -160,14 +163,19 @@ def remaining_days(info):
       print "could not parse info: '%s'" % nca
       return None
 
-disks = get_disks()
+#disks = get_disks()
 for disk in disks:
   info = get_tinfo(disk)
+  #print "info %s" % info
   rm = remaining_mounts(info)
+  #print "remaining mounts: %s" % rm
   rd = remaining_days(info)
-  if (rm is None) or (rd is None):
-    continue
-  print "%s - remaining mounts: %s - remaining days: %s" % (disk,rm,rd)
+  if rm is not None:
+    if rd is None:
+      print "%s - remaining mounts: %s" % (disk,rm)
+    else:
+      print "%s - remaining mounts: %s - remaining days: %s" % (disk,rm,rd)
+
 
 print "To force a check of all filesystems with a reboot:"
 print "$ sudo touch /forcefsck && sudo shutdown -r now"
