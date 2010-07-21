@@ -4,8 +4,6 @@ print "boot-control 0.9 - organize file system checks on startup."
 CR="\r"
 LF="\n"
 
-DISK_LOC = "Platte" # 'Disk' in german for checking localized output of 'fdisk -l' 
-
 def assert1(condition,msg):
   if condition:
     return
@@ -97,23 +95,17 @@ def get_disks():
   #cmd="cat /etc/fstab|grep '^/dev'|cut -f1 -d' '"
   cmd="sudo fdisk -l 2>/dev/null|grep '^Disk /dev/'|cut -f2 -d' '"
   disk_list = call(cmd)
-  if len(disk_list) < 1:
-    cmd="sudo fdisk -l 2>/dev/null|grep '^%s /dev/'|cut -f2 -d' '" % DISK_LOC
-    disk_list = call(cmd)
-  print "disk_list: %s" % disk_list
+  print disk_list
   result = []
   for disk in disk_list:
     if disk.endswith(":"):
       result.append(disk[:-1])
     else:
       result.append(disk)
-  print "result: %s" % result
   return result
 
 def get_tinfo(disk):
-
   def extract_info(line):
-    print "extracting from line: %s" % line
     if len(line)<23:
       return {}
     k1 = line[:22].strip()
@@ -127,18 +119,15 @@ def get_tinfo(disk):
   def extract_info_all(lines):
     ind=0
     info_all = {}
-    print "extracting %s info lines..." % len(lines)
     for line in lines:
-      print "line %s" % ind
+      #print "line %s" % ind
       kv = extract_info(line)
       info_all.update(kv)
       ind = ind + 1
     return info_all
 
-  cmd = "sudo tune2fs -l %s 2>/dev/null" % disk
-  print "tune2fs cmd: %s" % cmd
-  tinfo = call(cmd)
-  print "tinfo: %s" % tinfo
+  cmd = "sudo tune2fs -l %s 2>/dev/null"
+  tinfo = call(cmd % disk)
   t2e = "command tune2fs did not return expected output"
   assert1(tinfo[0].startswith("tune2fs"),t2e)
   info = extract_info_all(tinfo[1:]) # the first line is the tune2fs banner
@@ -175,7 +164,6 @@ def remaining_days(info):
 disks = get_disks()
 for disk in disks:
   info = get_tinfo(disk)
-  print "info (disk): %s" % info
   rm = remaining_mounts(info)
   rd = remaining_days(info)
   if (rm is None) or (rd is None):
